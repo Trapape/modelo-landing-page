@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo Beer - Age Verification</title>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #fff;
+            background: url('img/background.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle,
+                    rgba(255, 255, 255, 0.99) 0%,
+                    /* Centro más blanco */
+                    rgba(255, 255, 255, 0.6) 50%,
+                    /* Degradado intermedio */
+                    rgba(255, 255, 255, 0) 100%
+                    /* Transparente en los bordes */
+                ),
+                url('img/background.png') no-repeat center center fixed;
+            background-size: cover;
+            z-index: -1;
+        }
+
+        .logo {
+            margin-bottom: 20px;
+        }
+
+        .logo img {
+            /* Aquí va el logo */
+            width: 200px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+
+        .verification-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .verification-group img {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #b38e5d;
+            border-radius: 8px;
+        }
+
+        .verification-group button {
+            padding: 10px 20px;
+            background-color: #b38e5d;
+            /* Color dorado */
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            border: 2px solid #967b4a;
+            /* Borde ligeramente más oscuro */
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+            /* Sombra para realce */
+        }
+
+        .verification-group button:hover {
+            background-color: #967b4a;
+            /* Color dorado más oscuro */
+            transform: scale(1.05);
+            /* Pequeño efecto de aumento */
+            box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.3);
+            /* Más sombra al pasar el cursor */
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #b38e5d;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .footer-text {
+            font-size: 0.8rem;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .footer-text a {
+            color: #333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        .language-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1rem;
+        }
+
+        .language-switcher span {
+            margin: 0 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .language-switcher span:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script>
+        async function fetchQRCode() {
+            //errorMessage.style.display = 'none'; // Mostrar el mensaje
+            const loadingMessage = document.getElementById('loading-message');
+            const spinner = document.querySelector('.spinner');
+            spinner.style.display = 'block'; // Mostrar spinner
+            loadingMessage.style.display = 'block'; // Mostrar mensaje de carga
+            try {
+                const state = crypto.randomUUID();
+                const response = await fetch(`https://auth.trapape.mx/context/login?client_id=rp1&redirect_uri=https%3A%2F%2Fmodelo-landing.web.app%2Fmain_page.html&response_type=code&state=${state}&scope=openid`, {
+                                                                                                                 
+                    method: 'GET',
+                    headers: {
+                        'accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.exchangeData && data.exchangeData.QR) {
+                    document.getElementById('qr-code').src = data.exchangeData.QR;
+                    pollStatus(data.exchangeData.id, data.exchangeData.accessToken, data.exchangeData.workflowId);
+                } else {
+                    showError("No se pudo cargar el código QR. Intenta nuevamente más tarde.");
+                }
+            } catch (error) {
+                console.error("Error al obtener el código QR:", error);
+                showError("Ocurrió un problema al conectar con el servidor.");
+            } finally {
+                spinner.style.display = 'none'; // Ocultar spinner
+                loadingMessage.style.display = 'none'; // Ocultar mensaje de carga
+            }
+        }
+
+        async function pollStatus(exchangeId, accessToken, workflowId) {
+            const idTokenExpirySeconds = 3600; // Máximo tiempo de espera en segundos
+            const intervalTime = 5000; // Intervalo entre consultas en milisegundos
+            const maxPollingTime = idTokenExpirySeconds * 1000; // Tiempo máximo en milisegundos
+            const startTime = Date.now(); // Marca el inicio del tiempo de espera
+
+            const interval = setInterval(async () => {
+                const elapsedTime = Date.now() - startTime; // Calcular tiempo transcurrido
+                if (elapsedTime >= maxPollingTime) {
+                    clearInterval(interval);
+                    showError("El tiempo de verificación expiró. Actualiza el código QR.");
+                    document.getElementById("qr-help").style.display = "block"; // Mostrar ayuda para actualizar
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`https://auth.trapape.mx/workflows/${workflowId}/exchanges/${exchangeId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const state = result.exchange.state;
+                        
+                        if (state === "complete") {
+                            console.log("Verificación completada.");
+                            clearInterval(interval);
+                            sessionStorage.setItem('accessToken', accessToken);
+                            sessionStorage.setItem('result', JSON.stringify(result));
+                            console.log(result);
+                            window.location.href = "main_page.html"; // Redirigir al usuario
+                        } else if (state === "invalid") {
+                            console.log("Estado inválido detectado.");
+                            console.log(result);
+                            clearInterval(interval);
+                            showError("El estado de la verificación es inválido. Intenta nuevamente.");
+                            document.getElementById("qr-help").style.display = "block";
+                        } else if (state === "pending") {
+                            console.log("Verificación pendiente.");
+                            // No hacer nada adicional, esperar el siguiente intervalo
+                        } else if (state === "active") {
+                            console.log(result);
+                            console.log("Esperando aceptación en la wallet.");
+                            document.getElementById('qr-code').style.opacity = '0.9'; // Reducir visibilidad del QR
+                            document.getElementById('qr-help').style.display = 'none'; // Ocultar ayuda para refrescar
+                            showMessage("Esperando que aceptes en tu wallet...");
+                        } else {
+                            console.log(result);
+                            console.log("Estado desconocido:", state);
+                            showError("Estado desconocido. Intenta nuevamente más tarde.");
+                        }
+                    } else {
+                        console.error("Error de estado:", response.status);
+                        clearInterval(interval);
+                        showError("Error al verificar el estado. Código: " + response.status);
+                    }
+                } catch (error) {
+                    console.error("Error al verificar el estado:", error);
+                    showError("Ocurrió un problema al verificar el estado.");
+                }
+            }, intervalTime);
+        }
+
+        window.onload = fetchQRCode;
+
+        function redirectToOpenCred() {
+            const authUrl = "https://auth.trapape.mx/login?client_id=rp1&redirect_uri=https%3A%2F%2Fmodelo-landing.web.app%2Fmain_page.html&response_type=code&state=d2VZaQ5wCJ&scope=openid";
+            window.location.href = authUrl;
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block'; // Mostrar el mensaje
+        }
+
+        function showMessage(message) {
+           const messageElement = document.getElementById('loading-message');
+            messageElement.textContent = message;
+            messageElement.style.display = 'block'; // Mostrar el mensaje
+            messageElement.style.color = 'blue'; // Color para diferenciar mensajes de estado
+        }
+
+        const translations = {
+            en: {
+                title: "Verify Your Age",
+                message: "To enter this site, please verify your age by scanning the QR code below with your wallet.",
+                qrHelp: "If you have trouble verifying, <a href='#' onclick='fetchQRCode(); return false;'>click here</a> to refresh the QR code.",
+                footer1: "We support the fight against underage drinking and drunk driving. To learn more, visit",
+                footer2: "Drink Responsibly. Constellation Brands, Chicago, USA | Brewed in Mexico.",
+                button: "Verify with Wallet"
+            },
+            es: {
+                title: "Verifica tu Edad",
+                message: "Para ingresar a este sitio, verifica tu edad escaneando el código QR con tu wallet.",
+                qrHelp: "Si tienes problemas para verificar, <a href='#' onclick='fetchQRCode(); return false;'>haz clic aquí</a> para actualizar el código QR.",
+                footer1: "Apoyamos la lucha contra el consumo de alcohol en menores de edad y conducir ebrio. Para más información, visita",
+                footer2: "Bebe Responsablemente. Constellation Brands, Chicago, EE.UU. | Elaborado en México.",
+                button: "Verificar con Wallet"
+            }
+        };
+
+        let currentLanguage = "en";
+
+        function switchLanguage(language) {
+            currentLanguage = language;
+
+            document.getElementById("title").textContent = translations[language].title;
+            document.getElementById("message").textContent = translations[language].message;
+            //document.getElementById("qr-help").textContent = translations[language].qrHelp;
+            document.getElementById("qr-help").innerHTML = translations[language].qrHelp;
+            document.getElementById("footer1").textContent = translations[language].footer1;
+            document.getElementById("footer2").textContent = translations[language].footer2;
+            document.getElementById("verify-button").textContent = translations[language].button;
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Selector de idioma -->
+    <div class="language-switcher">
+        <span onclick="switchLanguage('en')">EN</span> | <span onclick="switchLanguage('es')">ES</span>
+    </div>
+
+    <!-- Logo -->
+    <div class="logo">
+        <img src="img/modelo-logo.png" alt="Modelo Beer Logo">
+    </div>
+
+    <!-- Mensaje principal -->
+    <h1 id="title">Verify Your Age</h1>
+    <p id="message">To enter this site, please verify your age by scanning the QR code below with your wallet.</p>
+
+    <!-- Verificación con wallet -->
+    <div class="verification-group">
+        <div class="spinner"></div>
+        <img id="qr-code" alt="QR Code for age verification">
+        <p id="error-message" style="color: red; display: none;"></p>
+        <p id="loading-message" style="font-size: 0.9rem; color: gray;">Cargando código QR...</p>
+        </img>
+        <p id="qr-help">
+            If you have trouble verifying,
+            <a href="#" onclick="fetchQRCode(); return false;">click here</a> to refresh the QR code.
+        </p>
+        <button id="verify-button" onclick="redirectToOpenCred()">Verify with Wallet</button>
+    </div>
+
+    <!-- Texto del pie de página -->
+    <div class="footer-text">
+        <p id="footer1">We support the fight against underage drinking and drunk driving. To learn more, visit <a
+                href="https://www.responsibility.org" target="_blank">www.responsibility.org</a>.</p>
+        <p id="footer2">Drink Responsibly. Constellation Brands, Chicago, USA | Brewed in Mexico.</p>
+    </div>
+</body>
+
+</html>

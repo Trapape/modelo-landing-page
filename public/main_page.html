@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo Beer - Discover Excellence</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Función para validar el acceso
+        function validateAccess() {
+            const result = sessionStorage.getItem('result');
+            if (!result) {
+                redirectToHome();
+                return;
+            }
+
+            try {
+                const data = JSON.parse(result);
+                const recordExpiresAt = new Date(data.exchange.recordExpiresAt);
+                const now = new Date();
+
+                if (now > recordExpiresAt) {
+                    alert("El acceso ha expirado. Por favor, vuelve a verificar.");
+                    clearSessionAndRedirect();
+                }
+            } catch (error) {
+                console.error("Error validando el acceso:", error);
+                redirectToHome();
+            }
+        }
+
+        // Función para borrar la sesión y redirigir
+        function clearSessionAndRedirect() {
+            sessionStorage.clear();
+            redirectToHome();
+        }
+
+        // Función para redirigir a la página principal
+        function redirectToHome() {
+            window.location.href = "index.html"; // Cambia "index.html" al nombre de tu página principal
+        }
+
+        // Cargar la información al cargar la página
+        window.onload = () => {
+            validateAccess();
+        };
+
+    </script>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: url('img/background.png') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+        }
+    
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.8) 100%);
+            z-index: -1;
+        }
+    
+        /* Header Section */
+        .modelo-header {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    
+        .menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+    
+        .menu-link {
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #003366;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+    
+        .menu-link:hover {
+            color: #b38e5d;
+            text-decoration: underline;
+        }
+    
+        .divider {
+            width: 1px;
+            height: 16px;
+            background-color: #ccc;
+        }
+    
+        .logo img {
+            width: 120px;
+            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.5));
+        }
+    
+        .social-links {
+            display: flex;
+            gap: 10px;
+        }
+    
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            background-size: cover;
+            background-repeat: no-repeat;
+            transition: transform 0.3s ease;
+        }
+    
+        .social-icon:hover {
+            transform: scale(1.2);
+        }
+    
+        .social-icon.email { background-image: url('icons/email-icon.png'); }
+        .social-icon.facebook { background-image: url('icons/facebook-icon.png'); }
+        .social-icon.instagram { background-image: url('icons/instagram-icon.png'); }
+        .social-icon.twitter { background-image: url('icons/twitter-icon.png'); }
+        .social-icon.youtube { background-image: url('icons/youtube-icon.png'); }
+    
+        .language-selector {
+            font-family: Arial, sans-serif;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #003366;
+            display: flex;
+            gap: 10px;
+        }
+    
+        .language {
+            color: #003366;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+    
+        .language:hover {
+            color: #b38e5d;
+        }
+    
+        /* Carousel Section */
+        .product-carousel {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 20px 0;
+        }
+    
+        .product-image {
+            width: 300px;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    
+        .product-info {
+            margin-top: 15px;
+        }
+    
+        .product-info h2 {
+            font-size: 1.8rem;
+            font-family: 'Arial', sans-serif;
+            color: #b38e5d;
+            margin-bottom: 10px;
+        }
+    
+        .product-info p {
+            font-size: 1rem;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            line-height: 1.6;
+        }
+    
+        .slick-prev,
+        .slick-next {
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #003366;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            transition: background-color 0.3s ease;
+        }
+    
+        .slick-prev:hover,
+        .slick-next:hover {
+            background-color: #b38e5d;
+            color: #fff;
+        }
+    
+        /* Banner Section */
+        .modelo-banner {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px 0;
+            margin-top: 20px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    
+        .banner-top {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    
+        .logo-emblem img {
+            width: 100px;
+            height: auto;
+        }
+    
+        .banner-text {
+            margin-left: 15px;
+            text-align: left;
+            font-family: 'Arial', sans-serif;
+            color: #003366;
+        }
+    
+        .banner-text h2 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+    
+        .banner-text p {
+            font-size: 1rem;
+            color: #555;
+        }
+    
+        .banner-middle {
+            position: relative;
+        }
+    
+        .banner-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+    
+        .overlay-text {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            color: #fff;
+            width: 90%;
+            text-align: center;
+            border-radius: 10px;
+        }
+    
+        .overlay-text h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #dfc183;
+        }
+    
+        .overlay-text p {
+            font-size: 1.2rem;
+            color: #f9d7a1;
+        }
+    
+        /* Subscribe Section */
+        .subscribe-section {
+            background-color: #fef7e8;
+            padding: 40px;
+            text-align: center;
+        }
+    
+        .subscribe-section h2 {
+            font-size: 2rem;
+            color: #003366;
+            margin-bottom: 10px;
+        }
+    
+        .subscribe-section p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+            color: #555;
+        }
+    
+        .subscribe-form {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: left;
+        }
+    
+        .form-group {
+            margin-bottom: 20px;
+        }
+    
+        label {
+            display: block;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 5px;
+        }
+    
+        input[type="email"],
+        input[type="date"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+    
+        .form-checkbox {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+    
+        .form-checkbox input {
+            margin-right: 10px;
+            margin-top: 2px;
+        }
+    
+        .form-checkbox label {
+            font-size: 0.9rem;
+            color: #555;
+        }
+    
+        .form-checkbox a {
+            color: #003366;
+            text-decoration: none;
+        }
+    
+        .form-checkbox a:hover {
+            text-decoration: underline;
+        }
+    
+        .btn-submit {
+            background-color: #dfc183;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+    
+        .btn-submit:hover {
+            background-color: #b38e5d;
+        }
+    
+        /* Footer Section */
+    /* Footer Section */
+    .footer-section {
+        background-color: #003366;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .footer-logo {
+        width: 100px;
+        margin-bottom: 20px;
+    }
+
+    .footer-links,
+    .social-icons,
+    .footer-legal-links {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0;
+    }
+
+    .footer-links li,
+    .footer-legal-links li {
+        display: inline-block;
+        margin: 0 10px;
+    }
+
+    .footer-links a,
+    .footer-legal-links a {
+        color: #dfc183;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .footer-links a:hover,
+    .footer-legal-links a:hover {
+        text-decoration: underline;
+    }
+
+    .social-icons li {
+        display: inline-block;
+        margin: 0 5px;
+    }
+
+    .social-icons img {
+        width: 20px;
+        height: 20px;
+    }
+    </style>
+        
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="modelo-header">
+        <div class="header-container">
+            <div class="menu">
+                <a href="#" class="menu-link">MENU</a>
+                <span class="divider"></span>
+                <a href="#" class="menu-link">CASA MODELO</a>
+            </div>
+            <div class="logo">
+                <img src="img/modelo-logo.png" alt="Modelo Logo">
+            </div>
+            <div class="social-links">
+                <a href="#" class="social-icon email"></a>
+                <a href="#" class="social-icon facebook"></a>
+                <a href="#" class="social-icon instagram"></a>
+                <a href="#" class="social-icon twitter"></a>
+                <a href="#" class="social-icon youtube"></a>
+            </div>
+            <div class="language-selector">
+                <a href="#" class="language">EN</a> /
+                <a href="#" class="language">ES</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="product-carousel">
+        <div>
+            <img src="img/image1.png" alt="Modelo Especial" class="product-image">
+            <div class="product-info">
+                <h2>Modelo Especial</h2>
+                <p>Fresca, pura y refrescante. La cerveza mexicana modelo.</p>
+            </div>
+        </div>
+        <div>
+            <img src="img/image2.png" alt="Modelo Aguas Frescas" class="product-image">
+            <div class="product-info">
+                <h2>Spiked Aguas Frescas</h2>
+                <p>Un vibrante y delicioso refrescante twist a las clásicas aguas frescas de los mercados mexicanos.</p>
+            </div>
+        </div>
+        <div>
+            <img src="img/image3.png" alt="Modelo Oro" class="product-image">
+            <div class="product-info">
+                <h2>Modelo Oro</h2>
+                <p>La cerveza ligera estándar de oro. Ligera, con gran sabor y calidad.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modelo-banner">
+        <div class="banner-top">
+            <div class="logo-emblem">
+                <img src="img/golden-emblem.png" alt="Golden Emblem">
+            </div>
+            <div class="banner-text">
+                <h2>Casa Modelo</h2>
+                <p>Desde 1925</p>
+            </div>
+        </div>
+        <div class="banner-middle">
+            <img src="img/celebration-image.png" alt="Modelo Celebration" class="banner-image">
+            <div class="overlay-text">
+                <h1>Elaborada para aquellos</h1>
+                <p>con un Espíritu Luchador</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <section class="subscribe-section">
+        <h2>Regístrese por correo electrónico</h2>
+        <p>Recibe noticias y marketing. Preparado para aquellos con un espíritu de lucha.</p>
+        <form class="subscribe-form">
+            <div class="form-group">
+                <label for="email">DIRECCIÓN DE CORREO ELECTRÓNICO*</label>
+                <input type="email" id="email" name="email" placeholder="example@domain.com" required>
+            </div>
+            <div class="form-group">
+                <label for="dob">FECHA DE NACIMIENTO*</label>
+                <input type="date" id="dob" name="dob" required>
+            </div>
+            <div class="form-group">
+                <label for="zipcode">CÓDIGO POSTAL*</label>
+                <input type="text" id="zipcode" name="zipcode" placeholder="XXXXX" required>
+            </div>
+            <div class="form-checkbox">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">Al hacer clic en "enviar", he leído y acepto Aviso de Modelo’s <a
+                        href="#">privacidad</a> y <a href="#">términos</a>.</label>
+            </div>
+            <button type="submit" class="btn-submit">SUSCRIBIRSE</button>
+        </form>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-section">
+        <img src="img/modelo-logo.png" alt="Modelo Logo" class="footer-logo">
+        <ul class="footer-links">
+            <li><a href="#">POLÍTICA DE PRIVACIDAD</a></li>
+            <li><a href="#">TÉRMINOS Y CONDICIONES</a></li>
+            <li><a href="#">PREGUNTAS FRECUENTES</a></li>
+        </ul>
+        <ul class="social-icons">
+            <li><a href="#"><img src="icons/email-icon.png" alt="Email"></a></li>
+            <li><a href="#"><img src="icons/facebook-icon.png" alt="Facebook"></a></li>
+            <li><a href="#"><img src="icons/instagram-icon.png" alt="Instagram"></a></li>
+            <li><a href="#"><img src="icons/twitter-icon.png" alt="Twitter"></a></li>
+            <li><a href="#"><img src="icons/youtube-icon.png" alt="YouTube"></a></li>
+        </ul>
+        <p>Bebe responsablemente. Constellation Brands, Chicago, Estados Unidos | Elaborado en México.</p>
+        <ul class="footer-legal-links">
+            <li><a href="#">MAPA DEL SITIO</a></li>
+            <li><a href="#">CONTACTO</a></li>
+            <li><a href="#">NO VENDER NI COMPARTIR MI INFORMACIÓN PERSONAL</a></li>
+        </ul>
+    </footer>
+
+    <script>
+        $(document).ready(function () {
+            $('.product-carousel').slick({
+                dots: true,                // Show navigation dots
+                infinite: true,            // Loop through slides
+                slidesToShow: 1,           // Show one slide at a time
+                slidesToScroll: 1,         // Scroll one slide at a time
+                autoplay: true,            // Enable autoplay
+                autoplaySpeed: 3000,       // Delay between slides (3 seconds)
+                prevArrow: '<button class="slick-prev">‹</button>',
+                nextArrow: '<button class="slick-next">›</button>'
+            });
+        });
+
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"></script>
+</body>
+
+</html>
